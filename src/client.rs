@@ -30,8 +30,8 @@ use serde;
 use serde_json;
 
 use super::{Request, Response};
-use util::HashableValue;
 use error::Error;
+use util::HashableValue;
 
 /// A handle to a remote JSONRPC server
 pub struct Client {
@@ -53,6 +53,25 @@ impl Client {
             user: user,
             pass: pass,
             client: HyperClient::new(),
+            nonce: Arc::new(Mutex::new(0)),
+        }
+    }
+
+    /// Creates a new client with a custom hyper client
+    pub fn new_with_hyper_client(
+        client: HyperClient,
+        url: String,
+        user: Option<String>,
+        pass: Option<String>,
+    ) -> Client {
+        // Check that if we have a password, we have a username; other way around is ok
+        debug_assert!(pass.is_none() || user.is_some());
+
+        Client {
+            url: url,
+            user: user,
+            pass: pass,
+            client,
             nonce: Arc::new(Mutex::new(0)),
         }
     }
