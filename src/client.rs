@@ -96,7 +96,7 @@ impl Client {
     {
         // Build request
         let request_raw = serde_json::to_vec(body)?;
-
+        println!("request raw {:?}", request_raw);
         // Setup connection
         let mut headers = Headers::new();
         headers.set(ContentType::json());
@@ -106,12 +106,20 @@ impl Client {
                 password: self.pass.clone(),
             }));
         }
+        println!("{:?}", headers);
+
+        println!("{:?}", &request_raw[..]);
+        println!("{}", self.url);
+        // Send request
 
         // Send request
         let retry_headers = headers.clone();
         let hyper_request = self.client.post(&self.url).headers(headers).body(&request_raw[..]);
         let mut stream = match hyper_request.send() {
-            Ok(s) => s,
+            Ok(s) => {
+                println!("it worked? {:?}", s);
+                s
+            }
             // Hyper maintains a pool of TCP connections to its various clients,
             // and when one drops it cannot tell until it tries sending. In this
             // case the appropriate thing is to re-send, which will cause hyper
@@ -122,6 +130,7 @@ impl Client {
                 if e.kind() == io::ErrorKind::BrokenPipe
                     || e.kind() == io::ErrorKind::ConnectionAborted
                 {
+                    println!("notworked1 {:?}", e);
                     try!(self
                         .client
                         .post(&self.url)
@@ -134,6 +143,7 @@ impl Client {
                 }
             }
             Err(e) => {
+                println!("notworked2 {:?}", e);
                 return Err(Error::Hyper(e));
             }
         };
@@ -148,6 +158,7 @@ impl Client {
     /// Sends a request to a client
     pub fn send_request(&self, request: &Request) -> Result<Response, Error> {
         let response: Response = self.send_raw(&request)?;
+        println!("send_request response {:?}", response);
         if response.jsonrpc != None && response.jsonrpc != Some(From::from("2.0")) {
             return Err(Error::VersionMismatch);
         }
